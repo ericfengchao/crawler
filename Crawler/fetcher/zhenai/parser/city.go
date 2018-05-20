@@ -1,19 +1,17 @@
 package parser
 
 import (
+	"github.com/ericfengchao/crawler/Crawler/engine/model"
 	"log"
 	"regexp"
-
-	"github.com/ericfengchao/crawler/Crawler/engine/model"
 )
 
 const cityPageRegexp = `<td><a href="(http://album.zhenai.com/u/[\d]+)"[^>]+>([^<]+)</a></td>`
 
-// `<th><a href="(http://album.zhenai.com/u/[0-9]+)[^>]*>([^>]+)</a></th>`
+var cityPageRe = regexp.MustCompile(cityPageRegexp)
 
 func ParseCity(contents []byte, pageType string) model.ParseResult {
-	re := regexp.MustCompile(cityPageRegexp)
-	matches := re.FindAllSubmatch(contents, -1)
+	matches := cityPageRe.FindAllSubmatch(contents, -1)
 
 	result := model.ParseResult{}
 	for _, m := range matches {

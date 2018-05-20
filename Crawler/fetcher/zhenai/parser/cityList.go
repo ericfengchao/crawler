@@ -9,9 +9,10 @@ import (
 
 const cityListPageRegexp = `<a href="(http://city.zhenai.com/[[:alnum:]]+)"[^>]+>([^<]+)</a>`
 
+var cityListPageRe = regexp.MustCompile(cityListPageRegexp)
+
 func ParseCityList(contents []byte, pageType string) model.ParseResult {
-	re := regexp.MustCompile(cityListPageRegexp)
-	matches := re.FindAllSubmatch(contents, -1)
+	matches := cityListPageRe.FindAllSubmatch(contents, -1)
 
 	result := model.ParseResult{}
 	for _, m := range matches {
