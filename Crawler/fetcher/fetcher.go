@@ -14,20 +14,25 @@ import (
 	"golang.org/x/text/transform"
 )
 
-var rateTicker = time.NewTicker(time.Millisecond * 50)
+var rateTicker = time.NewTicker(time.Millisecond * 10)
 
 func Fetch(url string) ([]byte, error) {
 	// rate limit to avoid being brutal
 	<-rateTicker.C
 	// log.Printf("Fetching %s...\n", url)
-	resp, err := http.Get(url)
+	req, err := http.NewRequest(http.MethodGet, url, nil)
+	if err != nil {
+		return nil, err
+	}
+	req.Header.Add("User-Agent", " Mozilla/5.0 (Macintosh; Intel Mac OS X 10_13_4) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/66.0.3359.181 Safari/537.36")
+	resp, err := http.DefaultClient.Do(req)
 	if err != nil {
 		return nil, errors.New("error fetching url " + url + err.Error())
 	}
 	defer resp.Body.Close()
 
 	if resp.StatusCode != http.StatusOK {
-		return nil, fmt.Errorf("%s, %v", resp.StatusCode, resp)
+		return nil, fmt.Errorf("%v, %v", resp.StatusCode, resp)
 	}
 	r := bufio.NewReader(resp.Body)
 	utf8Reader := transform.NewReader(resp.Body, determineEncoding(r).NewDecoder())

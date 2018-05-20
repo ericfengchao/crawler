@@ -7,22 +7,18 @@ import (
 )
 
 type concurrentScheduler struct {
-	requestChan chan *model.Request
-	workerChan  chan chan *model.Request
+	requestChan chan model.Request
+	workerChan  chan chan model.Request
 }
 
 func NewConcurrentScheduler() Scheduler {
 	c := &concurrentScheduler{}
-	c.requestChan = make(chan *model.Request)
-	c.workerChan = make(chan chan *model.Request)
+	c.requestChan = make(chan model.Request)
+	c.workerChan = make(chan chan model.Request)
 	return c
 }
 
-func (c *concurrentScheduler) EnqueueRequest(r *model.Request) error {
-	if r == nil {
-		return errors.New("Scheduler: Nil request NOT Allowed!")
-	}
-
+func (c *concurrentScheduler) EnqueueRequest(r model.Request) error {
 	if c.requestChan == nil {
 		return errors.New("Scheduler: Request chan not constructed!")
 	}
@@ -33,7 +29,7 @@ func (c *concurrentScheduler) EnqueueRequest(r *model.Request) error {
 	return nil
 }
 
-func (c *concurrentScheduler) EnqueueWorker(worker chan *model.Request) error {
+func (c *concurrentScheduler) EnqueueWorker(worker chan model.Request) error {
 	if worker == nil {
 		return errors.New("Scheduler: Nil worker NOT Allowed!")
 	}
@@ -53,11 +49,11 @@ func (c *concurrentScheduler) Run() {
 }
 
 func (c *concurrentScheduler) schedule() {
-	var reqQ []*model.Request
-	var workerQ []chan *model.Request
+	var reqQ []model.Request
+	var workerQ []chan model.Request
 	for {
-		var activeReq *model.Request
-		var activeWorker chan *model.Request
+		var activeReq model.Request
+		var activeWorker chan model.Request
 		if len(reqQ) > 0 && len(workerQ) > 0 {
 			activeReq = reqQ[0]
 			activeWorker = workerQ[0]
@@ -68,6 +64,7 @@ func (c *concurrentScheduler) schedule() {
 		case worker := <-c.workerChan:
 			workerQ = append(workerQ, worker)
 		case activeWorker <- activeReq:
+			// assign req to worker
 			reqQ = reqQ[1:]
 			workerQ = workerQ[1:]
 		}

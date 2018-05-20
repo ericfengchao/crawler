@@ -8,7 +8,7 @@ import (
 )
 
 func main() {
-	url := "http://www.zhenai.com/zhenghun"
+	url := "http://city.zhenai.com/"
 	e := engine.ConcurrentEngine{
 		WorkerCount: 10,
 		ItemChan:    dal.ItemSaver(),
@@ -16,5 +16,6 @@ func main() {
 	e.Start(model.Request{
 		Url:        url,
 		ParserFunc: parser.ParseCityList,
+		PageTitle:  "City List Page",
 	})
 }

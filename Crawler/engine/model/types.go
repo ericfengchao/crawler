@@ -2,7 +2,8 @@ package model
 
 type Request struct {
 	Url        string
-	ParserFunc func([]byte) *ParseResult
+	PageTitle  string
+	ParserFunc func([]byte, string) ParseResult
 }
 
 type ParseResult struct {
