@@ -34,8 +34,8 @@ func producer(r model.Request, parseResultChan chan model.ParseResult) error {
 		log.Printf("Fetcher: error fetching url: %s, err: %v\n", r.Url, err)
 		return err
 	}
-	if newR := r.ParserFunc(body); newR != nil {
-		parseResultChan <- *newR
+	if newR := r.ParserFunc(body, r.PageTitle); len(newR.Requests) > 0 {
+		parseResultChan <- newR
 	}
 	return nil
 }

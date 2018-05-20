@@ -1,7 +1,6 @@
 package parser
 
 import (
-	"log"
 	"regexp"
 	"strconv"
 
@@ -15,15 +14,15 @@ var heightRe = regexp.MustCompile(`<td><span class="label">身高：</span>([0-9
 
 var IncomeRe = regexp.MustCompile(` <td><span class="label">月收入：</span>(.+元)</td>`)
 
-var nameRe = regexp.MustCompile(`<a class="name fs24">(.+)</a>`)
+var nameRegexp = regexp.MustCompile(`<h1 class="ceiling-name[^>]+>([^<]+)</h1>`)
 
-func ParseProfile(contents []byte) *engine_model.ParseResult {
+func ParseProfile(contents []byte, pageType string) engine_model.ParseResult {
 	profile := model.Profile{}
-	if name := extractStr(contents, nameRe); name != "" {
+	if name := extractStr(contents, nameRegexp); name != "" {
 		profile.Name = name
 	} else {
 		// user name is the basic required field or discard this user
-		return nil
+		return engine_model.ParseResult{}
 	}
 
 	if ageMatch, err := strconv.Atoi(extractStr(contents, ageRe)); err == nil {
@@ -37,10 +36,10 @@ func ParseProfile(contents []byte) *engine_model.ParseResult {
 	if incomeMatch := extractStr(contents, heightRe); incomeMatch != "" {
 		profile.Income = incomeMatch
 	}
-	log.Printf("Profile Crawled: %v\n", profile)
+	// log.Printf("Profile Crawled: %+v\n", profile)
 	result := engine_model.ParseResult{}
 	result.Items = []interface{}{profile}
-	return &result
+	return result
 }
 
 func extractStr(contents []byte, re *regexp.Regexp) string {

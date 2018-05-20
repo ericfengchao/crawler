@@ -22,7 +22,7 @@ func (e *ConcurrentEngine) Start(seeds ...model.Request) {
 	e.Scheduler = scheduler.NewConcurrentScheduler()
 	e.Scheduler.Run()
 	for _, r := range seeds {
-		e.Scheduler.EnqueueRequest(&r)
+		e.Scheduler.EnqueueRequest(r)
 	}
 
 	out := make(chan interface{})
@@ -34,16 +34,18 @@ func (e *ConcurrentEngine) Start(seeds ...model.Request) {
 	// unified output/re-iteration
 	for o := range out {
 		if result, ok := o.(model.ParseResult); ok {
+			// if it's user profile, pass it to saving channel
 			for _, item := range result.Items {
 				go func() {
 					e.ItemChan <- item
 				}()
 			}
-			for _, r := range result.Requests {
-				if isDuplicate(r.Url) {
+			// if it's intermediate parseResult, enqueue it to request channel
+			for _, r_ := range result.Requests {
+				if isDuplicate(r_.Url) {
 					continue
 				}
-				e.Scheduler.EnqueueRequest(&r)
+				e.Scheduler.EnqueueRequest(r_)
 			}
 		} else {
 			log.Printf("Got err: %+v\n", o)
@@ -55,7 +57,7 @@ var uniqueUrlMap = make(map[string]bool)
 
 func isDuplicate(r string) bool {
 	if _, ok := uniqueUrlMap[r]; ok {
-		log.Printf("Duplicate url %s\n", r)
+		// log.Printf("Duplicate url %s\n", r)
 		return true
 	}
 	uniqueUrlMap[r] = true
@@ -64,7 +66,7 @@ func isDuplicate(r string) bool {
 
 func (ce *ConcurrentEngine) createWorker(id int, out chan interface{}) {
 	log.Printf("Creating worker #%d\n", id)
-	in := make(chan *model.Request)
+	in := make(chan model.Request)
 	go func() {
 		for {
 			ce.Scheduler.EnqueueWorker(in)
@@ -72,25 +74,21 @@ func (ce *ConcurrentEngine) createWorker(id int, out chan interface{}) {
 			result, err := work(r)
 			if err != nil {
 				out <- fmt.Errorf("Worker %d encountered error %+v\n", id, err)
-			}
-			if result != nil {
-				out <- *result
+			} else {
+				out <- result
 			}
 		}
 	}()
 }
 
-func work(r *model.Request) (*model.ParseResult, error) {
+func work(r model.Request) (model.ParseResult, error) {
 	if r.Url == "" {
 		log.Println("Invalid Url!", r)
-		return nil, errors.New("Invalid url")
+		return model.ParseResult{}, errors.New("Invalid url")
 	}
 	body, err := fetcher.Fetch(r.Url)
 	if err != nil {
-		return nil, err
+		return model.ParseResult{}, err
 	}
-	if parseResult := r.ParserFunc(body); parseResult != nil {
-		return parseResult, nil
-	}
-	return nil, nil
+	return r.ParserFunc(body, r.PageTitle), nil
 }

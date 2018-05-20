@@ -1,26 +1,30 @@
 package parser
 
 import (
+	"log"
 	"regexp"
 
 	"github.com/ericfengchao/crawler/Crawler/engine/model"
 )
 
-const cityPageRegex = `<a href="(http://www.zhenai.com/zhenghun/[[:alpha:]]+)"[^>]+>([^<]+)</a>`
+const cityListPageRegexp = `<a href="(http://city.zhenai.com/[[:alnum:]]+)"[^>]+>([^<]+)</a>`
 
-func ParseCityList(contents []byte) *model.ParseResult {
-	re := regexp.MustCompile(cityPageRegex)
+func ParseCityList(contents []byte, pageType string) model.ParseResult {
+	re := regexp.MustCompile(cityListPageRegexp)
 	matches := re.FindAllSubmatch(contents, -1)
 
 	result := model.ParseResult{}
 	for _, m := range matches {
+		m_ := m
 		result.Requests = append(result.Requests, model.Request{
-			Url:        string(m[1]),
+			Url:        string(m_[1]),
+			PageTitle:  string(m_[2]),
 			ParserFunc: ParseCity,
 		})
 		//result.Items = append(result.Items, "City "+string(m[2]))
+		log.Printf("Page %s Got City %s\n", pageType, m_[2])
 	}
-	return &result
+	return result
 }
 
 func NilParser([]byte) *model.ParseResult {
