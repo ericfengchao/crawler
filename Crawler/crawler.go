@@ -9,9 +9,14 @@ import (
 
 func main() {
 	url := "http://city.zhenai.com/"
+	saver, err := dal.NewElasticSearchClient()
+	if err != nil {
+		// elastic search client failed
+		panic(err)
+	}
 	e := engine.ConcurrentEngine{
 		WorkerCount: 10,
-		ItemChan:    dal.ItemSaver(),
+		ItemChan:    saver.ItemSaver(),
 	}
 	e.Start(model.Request{
 		Url:        url,
